@@ -1,0 +1,15 @@
+.env
+
+my_anime_list_parser/token.json
+
+data/*
+
+data_preprocessing/*
+
+models_params/*
+
+*ipynb
+
+*accdb
+
+*json
