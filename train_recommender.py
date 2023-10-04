@@ -19,29 +19,23 @@ class Recommender_System:
         self.epochs = epochs
 
     def train(self,xu, xi, y, r, index):
-        # self.filter.train(y, r, index, epochs=self.epochs, verbose=True, normalize=False)
-        # self.filter.train(xu, xi, y, r, self.epochs, verbose=True)
         self.filter.train(xu, xi, index, y, r, epochs=self.epochs, verbose=True, expand=True)
 
 
 
 def main(u_start, u_end, movie_start, movie_end, filter:Recommender_System):
     global dataset, user_feat, movie_feat
-   
 
     rating = dataset
 
+    # selecting the training range of user and movies
     xu = user_feat[u_start:u_end]
-    xm = movie_feat[movie_start:movie_end]
-
-  
+    xm = movie_feat[movie_start:movie_end]  
 
     user_index = np.arange(u_start, u_end)
     movie_index = np.arange(movie_start, movie_end)
 
-    # filter.train(rating, mask, index=(user_index, movie_index))
     filter.train(xu, xm, rating, mask, (user_index, movie_index))
-    # filter.train(xu, xm, rating, mask)
 
 def evaluate(u_start, u_end, movie_start, movie_end, recommend:Hybrid_recommendation_system):
    
@@ -51,38 +45,28 @@ def evaluate(u_start, u_end, movie_start, movie_end, recommend:Hybrid_recommenda
   
 
     user_index = np.arange(u_start, u_end)
-    movie_index = np.arange(movie_start, movie_end)
-
     user_param, _ = recommend.ncf.get_params_from_idx((user_index, None))
+
+    # we predict the movie parameters
     movie_param =  movie_param_predictor(recommend.predict_latent_vec(test_movie_feat))   
 
-    # prediction = recommend.predict(indexes=(user_index, movie_index), expand=True, normalize=False)
-    # prediction = recommend.prediction(xu, xm, indexes=(user_index, movie_index), expand=True)
     prediction = recommend.prediction(xu, xm, u_params=user_param, i_params=movie_param, expand=True)
-    # prediction = recommend.predict(xu, xm, expand=True)
-    # prediction_reverse = prediction
+   
     prediction_reverse = prediction.numpy()
-    # prediction_reverse = labelScaler.inverse_transform(prediction_reverse)
 
     prediction_reverse = prediction_reverse 
-    # prediction_reverse = prediction_reverse.reshape(len(xu), len(xm)) * test_mask.reshape(len(xu), len(xm))
 
     print("===========================================")
     print("the prediction is :")
-    # print(prediction_reverse.reshape(len(xu), len(xm)))
     print((labelScaler.inverse_transform(prediction_reverse)  *test_mask).reshape(len(xu), len(xm)))
     print("===========================================")
     
-    # difference = (prediction_reverse - test_movie_rating) * test_mask
     difference = (labelScaler.inverse_transform(prediction_reverse) - labelScaler.inverse_transform(test_movie_rating)) * test_mask
-    # difference = (prediction_reverse - test_movie_rating.reshape(len(xu), len(xm))) * test_mask.reshape(len(xu), len(xm))
-    # print("the difference is :")
-    # print(difference.reshape(len(xu), len(xm)))
+   
 
     print("===========================================")
 
-    print("the answer is : ")
-    # print(test_movie_rating.reshape(len(xu), len(xm)) * test_mask.reshape(len(xu), len(xm)))
+    print("the label is : ")
     print((labelScaler.inverse_transform(test_movie_rating) * test_mask).reshape(len(xu), len(xm)))
 
     print("===========================================")
@@ -115,10 +99,12 @@ test_movie_feat = pd.read_csv("cleaned_data/movie_info_100.csv").iloc[num_movie-
 movie_feat = movie_feat.to_numpy()
 user_feat = user_feat.to_numpy()
 
+# preparing the scalers
 xu_scaler = StandardScaler()
 xm_scaler = StandardScaler()
 labelScaler = MinMaxScaler()
 
+# scaling the inputs vectors
 xu_scaler.fit(user_feat)
 user_feat = xu_scaler.transform(user_feat)
 
@@ -128,15 +114,11 @@ test_movie_feat = xm_scaler.transform(test_movie_feat)
 
 mask = np.where(train_movie.reshape(-1, 1) >= 0, 1, 0)
 labelScaler.fit(dataset.reshape(-1, 1))
-# dataset = labelScaler.transform(dataset.reshape(-1, 1))
-dataset = labelScaler.transform(train_movie.reshape(-1, 1))
 
-# test_mask = mask[-(num_user * 30):]
-# test_movie_rating = dataset[-(num_user * 30):]
+dataset = labelScaler.transform(train_movie.reshape(-1, 1)) # the ratings
+
 test_movie_rating = labelScaler.transform(test_movie_rating.reshape(-1, 1))
-# test_mask = mask[num_user*10:]
-# dataset = dataset[:-(num_user * 30)]
-# mask = mask[:-(num_user * 30)]
+
 
 print(user_feat[0])
 
@@ -147,21 +129,23 @@ lr = 0.00001
 
 step = 30
 
-# filter_system = Content_Based_filtering(u_dim, m_dim, 128, lr=lr)
-# filter_system = Neural_Collaborative_filtering(num_user, num_movie, 64, learning_rate=0.000001)
 filter_system = Hybrid_recommendation_system(num_user, num_movie, u_dim, m_dim, lr=lr, l_d=128)
 recommender = Recommender_System(filter_system, 1)
 
 random_u_start = num_user - 30
 random_m_start = num_movie - 30
 
+# the model to predict the movie parameters inside the collaborative filtering system
 movie_param_predictor = Params_prediction(filter_system.ncf.x_dim)
 
 evaluate(0, num_user, num_movie-test, num_movie, filter_system)
 
 print("===============================")
+input("press to start training...")
+
 print("starting to train")
-for _ in range(100):
+epochs = 200
+for _ in range(epochs):
     main(0, num_user, 0, num_movie-test, recommender)
 
 
