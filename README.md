@@ -137,3 +137,6 @@ We might run into a situation where we don't have enough user or item data to fi
 The project concerned anime data, so with access to myanimelist public api data, I could access various statistics about each item as much as various features data and even some recommendations based anime ressemblance. With that amount of data, it was possible to create using some probability setting a database representing a number user n and their interactions with a number of item m. From that database, it was possible to derive some user and item cluster and to create the whole system on that basis.
 
 Finally to test the efficacity of that system, I conducted a survey with some users of my website, I would be provided some informations about the items they appreciated and would try to recommend additional items, the rate of satisfaction was over 40% which constituated a solid basis for starting the implementation.
+
+### Buushido Implementation details
+You can find more details on how I specifically implemented these components in the buushido project by visiting the documentation of the project.
