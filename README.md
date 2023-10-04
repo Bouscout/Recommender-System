@@ -108,3 +108,32 @@ hybrid_system.train(user_features, item_features, indexes=param_indexes, ratings
 predictions = hybrid_system.prediction(user_features, item_features, indexes=param_indexes, weights=(0.5, 0.5), expand=True)
 print(predictions)
 ```
+## Implementation In A Project
+This recommendation system has already been implemented in a large project and those specific details can be found in the project "Buushido". Here is a schema for design of that implementation. 
+
+We divide the problem into 4 different aspects : 
+Embedding Retrieval,
+Ranking,
+Label Collection,
+Cold Start Problem,
+
+### Embedding Retrieval
+This part represent the process of selecting a sample of potential relevant items using the user informations.
+To address this problem, we laverage the latent variable of the trained model to classify the user and items into cluster using a Kmeans clustering technique.
+We use both the user model and item model present in the content filtering system of the hybrid system, we predict the latent vectors of all items and users and then classify them into user clusters and item clusters. We then proceed to identify which user cluster is attracted to which item cluster and set up a top three cluster for every user cluster.
+
+Therefore in the retrieval situation, you would need to find the user cluster from the informations you had access to, you will then retrieve the stored user item cluster top 3 and use those embeddings for the next step.
+
+### Ranking
+Once we have access to the embeddings and the user informations, you simple perform a prediction using the model for every item in the embedding with respect to the user.
+We will then sort those items according to their ratings and then recommend a number of items n to the user based on the sorted items.
+
+### Label Collection
+This part concerns retrieving the result of those predictions. It will totally depend on the technique used to label the interactions that the the user had with the recommended show. We will need to ensure that we have access to the informations used to make that predictions and the label made to that predictions. Those details will enable us to perform additional training regardless of the method of labelisation employed.
+
+### Cold Start Problem
+We might run into a situation where we don't have enough user or item data to find the patern in the model. Addressing this problem would depend on the situation and the type of problem so I will only mention my solution as for the Buushido project.
+
+The project concerned anime data, so with access to myanimelist public api data, I could access various statistics about each item as much as various features data and even some recommendations based anime ressemblance. With that amount of data, it was possible to create using some probability setting a database representing a number user n and their interactions with a number of item m. From that database, it was possible to derive some user and item cluster and to create the whole system on that basis.
+
+Finally to test the efficacity of that system, I conducted a survey with some users of my website, I would be provided some informations about the items they appreciated and would try to recommend additional items, the rate of satisfaction was over 40% which constituated a solid basis for starting the implementation.
