@@ -22,7 +22,6 @@ class Recommender_System:
         self.filter.train(xu, xi, index, y, r, epochs=self.epochs, verbose=True, expand=True)
 
 
-
 def main(u_start, u_end, movie_start, movie_end, filter:Recommender_System):
     global dataset, user_feat, movie_feat
 

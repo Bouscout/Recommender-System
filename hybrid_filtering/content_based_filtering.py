@@ -62,7 +62,7 @@ class Content_Based_filtering():
         self.model.compile(optimizer=self.optimizer, loss=tf.keras.losses.MeanSquaredError())
 
 
-    def loss_func(self, Xu, Xi, r, y) :
+    def loss_func(self, Xu, Xi, y, r_mask) :
         num_user, num_movie = len(Xu), len(Xi)
         # concat each user for all movies
         expand_Xu = tf.repeat(tf.expand_dims(Xu, axis=1), num_movie, axis=1)
@@ -80,7 +80,7 @@ class Content_Based_filtering():
 
         loss = (y_pred - y)**2
         # Apply the mask to the squared error to filter out non-rated items
-        filtered_squared_error = tf.boolean_mask(loss, r)
+        filtered_squared_error = tf.boolean_mask(loss, r_mask)
         # filtered_squared_error = loss * r
 
         return tf.reduce_sum(filtered_squared_error)
@@ -104,14 +104,14 @@ class Content_Based_filtering():
             tranpose_r = rating_mask.T
         else :
             transpose_rating = rating
-            tranpose_r = rating_mask
+            transpose_r_mask = rating_mask
 
         previous_loss = 10000
 
         for iteration in range(epochs) :
             
             with tf.GradientTape() as tape :
-                loss = self.loss_func(user_input, item_input, tranpose_r, transpose_rating)
+                loss = self.loss_func(user_input, item_input, transpose_rating, transpose_r_mask)
 
             # gradient step
             gradient = tape.gradient(loss, self.model.trainable_variables)

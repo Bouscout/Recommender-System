@@ -124,8 +124,9 @@ class Hybrid_recommendation_system():
             return params
         
         def loss_func(u_feat, i_feat, ratings, rating_mask):
+            epsilon = 1e-6
+
             ncf_weight, content_r_weight = self.weights 
-            
 
             output = self.prediction(u_feat, i_feat, u_params=u_param, i_params=i_param, weights=(ncf_weight, content_r_weight), expand=expand)
 
@@ -133,11 +134,13 @@ class Hybrid_recommendation_system():
                 filtered_output = tf.boolean_mask(output, rating_mask)
                 filtered_rating = tf.boolean_mask(ratings, rating_mask)
 
-                test_output = filtered_output.numpy()
-                test_rating = filtered_rating.numpy()
+                # test_output = filtered_output.numpy()
+                # test_rating = filtered_rating.numpy()
 
-                if np.any(np.isnan(test_output)) or np.any(np.isinf(test_output)):
-                    print("there is a nan")
+                # if np.any(np.isnan(test_output)) or np.any(np.isinf(test_output)):
+                #     print("there is a nan")
+
+                filtered_output = tf.clip_by_value(filtered_output, epsilon, 1-epsilon) # to avoid nan value
 
                 loss= tf.keras.losses.BinaryCrossentropy(from_logits=False)(filtered_rating, filtered_output)
 
@@ -180,7 +183,9 @@ class Hybrid_recommendation_system():
 
         # setting the new user params at the indexes
         self.ncf.set_params_at_idx(u_param.numpy(), i_param.numpy(), param_idx)
-        print()
+        
+        return loss.numpy()
+
 
     def predict_latent_vec(self, features, isUser=True):
         """Make a prediction a parameters using the content filter parameters vector and an output model"""
