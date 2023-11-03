@@ -43,6 +43,7 @@ class Neural_Collaborative_filtering():
         self.model = tf.keras.Sequential([
             tf.keras.layers.Dense(512, "relu"),
             tf.keras.layers.Dense(512, "relu"),
+            tf.keras.layers.Dense(512, "relu"),
             tf.keras.layers.Dense(output_dim, "linear"),
         ])
 

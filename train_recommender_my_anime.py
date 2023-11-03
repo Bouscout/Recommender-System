@@ -174,29 +174,60 @@ movie_feat = train_movie_feat
 lr = 0.0001
 
 step = 30
+random_u_start = num_user - 100
+random_m_start = num_movie - 100
 
 filter_system = Hybrid_recommendation_system(num_user, num_movie, u_dim, m_dim, lr=lr, l_d=128, binary=True)
 recommender = Recommender_System(filter_system, 1)
 
-random_u_start = num_user - 100
-random_m_start = num_movie - 100
 
 # the model to predict the movie parameters inside the collaborative filtering system
 movie_param_predictor = Params_prediction(filter_system.ncf.x_dim)
 
 # evaluate(0, num_user, num_movie-test, num_movie, filter_system)
 
-# print("===============================")
+print("===============================")
 # input("press to start training...")
 
-print("starting to train")
-epochs = 20
+
+epochs = 50
 num_movie_train = num_movie - test
 
-user_batch_size = 50
-movie_batch_size = 100
+user_batch_size = 100
+movie_batch_size = 300
+
+import pickle
+def save_checkpoint_info():
+    with open("checkpoint.pickle", "wb") as f :
+        save_point = {
+            "epoch" : epoch ,
+        }
+        pickle.dump(save_point, f)
+
+
+last_epoch = 0
+def load_save_point(new=False):
+    global filter_system, last_epoch
+    filter_system = Hybrid_recommendation_system(num_user, num_movie, u_dim, m_dim, lr=lr, l_d=256, binary=True)
+    filter_system.load_model()
+
+    with open("checkpoint.pickle", "rb") as f :
+        save_point = pickle.load(f)
+    
+    if new :
+        last_epoch = 0
+    else :
+        last_epoch = save_point["epoch"]
+    print("precedent session loaded")
+
+    
+load_save_point()
+
+print("starting to train")
 try : 
-    for _ in range(epochs):
+    for epoch in range(epochs):
+        if epoch < last_epoch :
+            continue
         for u_batch in range(user_batch_size, num_user, user_batch_size) :
             for m_batch in range(movie_batch_size, num_movie_train, movie_batch_size) :
                 # main(0, num_user, 0, num_movie-test, recommender)
@@ -206,11 +237,15 @@ try :
 
                 loss = main(u_start, u_batch, m_start, m_batch, recommender)
 
-                print(f"epochs {_} u_batch {u_batch} m_batch {m_batch} loss : {loss}", end="\r")
+                print(f"epochs {epoch} u_batch {u_batch} m_batch {m_batch} loss : {loss}", end="\r")
 
-        print(f"epochs {_} u_batch {u_batch} m_batch {m_batch} loss : {loss}")
-except :
-        print(f"epochs {_} u_batch {u_batch} m_batch {m_batch} loss : {loss}")
+        print(f"epochs {epoch} u_batch {u_batch} m_batch {m_batch} loss : {loss}")
+
+        filter_system.save_model()
+        save_checkpoint_info()
+except Exception as e:
+        print(e)
+        print(f"epochs {epoch} u_batch {u_batch} m_batch {m_batch} loss : {loss}")
 
 
 movie_idx = np.arange(0, num_movie-test)

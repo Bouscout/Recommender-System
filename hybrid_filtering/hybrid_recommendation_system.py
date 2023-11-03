@@ -50,7 +50,7 @@ class Hybrid_recommendation_system():
         self.create_model(binary)
 
         # prepare the NCF algorithm
-        collab_feature_dimension = 64
+        collab_feature_dimension = 128
         self.ncf = Neural_Collaborative_filtering(self.num_user, self.num_item, collab_feature_dimension, output_dim=latent_vector_dimension)
 
         self.user_param, self.item_param = self.ncf.get_params()
@@ -63,6 +63,7 @@ class Hybrid_recommendation_system():
 
     def create_model(self, binary):
         self.hybrid_model = tf.keras.Sequential([
+            tf.keras.layers.Dense(512, "relu"),
             tf.keras.layers.Dense(512, "relu"),
             tf.keras.layers.Dense(512, "relu"),
             tf.keras.layers.Dense(1, "sigmoid" if binary else "linear"),
