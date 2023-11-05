@@ -47,6 +47,8 @@ class Neural_Collaborative_filtering():
             tf.keras.layers.Dense(output_dim, "linear"),
         ])
 
+        self.model.compile(optimizer=Adam(learning_rate), loss="MSE", metrics=['accuracy'])
+
         self.optimizer = Adam(learning_rate=learning_rate)
         
         self.mean = 0

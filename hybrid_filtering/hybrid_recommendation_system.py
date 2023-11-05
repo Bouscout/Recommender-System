@@ -156,7 +156,8 @@ class Hybrid_recommendation_system():
                 # Apply the mask to the squared error to filter out non-rated items
                 filtered_squared_error = tf.boolean_mask(squared_error, rating_mask)
 
-                return tf.reduce_mean(filtered_squared_error)
+                # return tf.reduce_mean(filtered_squared_error)
+                return tf.reduce_sum(filtered_squared_error)
 
         # initializing new optimizer cause we might be using new params for the ncf
         optimizer = Adam(learning_rate=self.learning_rate)            

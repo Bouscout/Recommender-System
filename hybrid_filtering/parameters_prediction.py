@@ -5,14 +5,16 @@ from keras.optimizers import Adam
 from keras.losses import MeanSquaredError
 
 class Params_prediction:
-    def __init__(self, num_param, lr=0.0001) -> None:
+    def __init__(self, num_param, lr=0.0001, pred_type="item") -> None:
         """
         This class will aim to predict some uparameters based on the features provided
         """
         self.learning_rate = lr
         self.create_model(num_param)
-        
 
+        self.type = pred_type
+
+        self.model_path = f"hybrid_filtering/models/parameters_predictor/{self.type}"
     def create_model(self, num_param):
         self.model = tf.keras.Sequential([
             Dense(256, "relu"),
@@ -21,7 +23,8 @@ class Params_prediction:
         ])
 
 
-        self.model.compile(optimizer=Adam(self.learning_rate), loss=MeanSquaredError())
+        self.model.compile(optimizer=Adam(self.learning_rate), loss=MeanSquaredError(), metrics=['accuracy'])
+
 
     def prediction(self, features):
         """
@@ -37,3 +40,13 @@ class Params_prediction:
 
     def __call__(self, feature_vec) -> Any:
         return self.prediction(feature_vec)
+    
+    def save_model(self):
+        self.model.save(self.model_path)
+        print(f"paramets predictor {self.type} saved")
+
+    def load_model(self):
+        self.model = tf.keras.models.load_model(self.model_path)
+        print(f"paramets predictor {self.type} loaded")
+    
+

@@ -59,7 +59,7 @@ class Content_Based_filtering():
         self.model = tf.keras.Model([input_user, input_item], output)
         self.optimizer = Adam(learning_rate=lr)
 
-        self.model.compile(optimizer=self.optimizer, loss=tf.keras.losses.MeanSquaredError())
+        self.model.compile(optimizer=self.optimizer, loss=tf.keras.losses.MeanSquaredError(), metrics=["accuracy"])
 
 
     def loss_func(self, Xu, Xi, y, r_mask) :
