@@ -27,6 +27,7 @@ class Neural_Collaborative_filtering():
         """
         self.X_u = num_user
         self.X_i = num_item
+        
         self.x_dim = x_dim
 
         self._lambda_ = _lambda_

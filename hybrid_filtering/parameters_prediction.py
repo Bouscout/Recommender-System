@@ -17,8 +17,9 @@ class Params_prediction:
         self.model_path = f"hybrid_filtering/models/parameters_predictor/{self.type}"
     def create_model(self, num_param):
         self.model = tf.keras.Sequential([
-            Dense(256, "relu"),
-            Dense(256, "relu"),
+            Dense(512, "relu"),
+            Dense(1024, "relu"),
+            Dense(512, "relu"),
             Dense(num_param, "linear"),
         ])
 

@@ -211,6 +211,11 @@ class Hybrid_recommendation_system():
 
         self.ncf.load_model()
         self.content_filtering.load_model()
+
+        # loading info variables
+        self.num_user = self.ncf._user_params.shape[0]
+        self.num_item = self.ncf._item_params.shape[0]
+
         print("all models loaded")
 
 

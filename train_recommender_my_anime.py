@@ -1,25 +1,32 @@
-from hybrid_filtering.NCF import Neural_Collaborative_filtering
-from hybrid_filtering.content_based_filtering import Content_Based_filtering
-from hybrid_filtering.hybrid_recommendation_system import Hybrid_recommendation_system
+from hybrid_filtering_pytorch.ncf_torch import Neural_Collaborative_filtering
+from hybrid_filtering_pytorch.content_filtering_torch import Content_Based_filtering
+# from hybrid_filtering.hybrid_recommendation_system import Hybrid_recommendation_system
+from hybrid_filtering_pytorch.hybrid_recommender_torch import Hybrid_recommendation_system
 from hybrid_filtering.parameters_prediction import Params_prediction
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-import tensorflow as tf
+import torch
 import pandas as pd
 import numpy as np
+import os
+
 np.random.seed(5)
-tf.random.set_seed(5)
+# tf.random.set_seed(5)
+
+
 
 # with this test, we evaluate the performance on a set new movies
 # we will have a model prediction the params of the movie in the collaborative filtering based on the pattern observed from 
 # the training data
 
 class Recommender_System:
-    def __init__(self, filter:Hybrid_recommendation_system, epochs) -> None:
+    def __init__(self, filter:Content_Based_filtering, epochs) -> None:
         self.filter = filter
         self.epochs = epochs
 
-    def train(self,xu, xi, y, r, index):
-        loss = self.filter.train(xu, xi, index, y, r, epochs=self.epochs, verbose=False, expand=True)
+    def train(self,xu, xi, rating, mask, index):
+        loss = self.filter.train(xu, xi, index, rating, mask, epochs=self.epochs, verbose=False, expand=True)
+        # loss = self.filter.train(y, r, index, epochs=self.epochs, verbose=False)
+        # loss = self.filter.train(xu, xi, rating, mask, self.epochs, verbose=False)
         return loss
 
 def main(u_start, u_end, movie_start, movie_end, filter:Recommender_System):
@@ -29,11 +36,6 @@ def main(u_start, u_end, movie_start, movie_end, filter:Recommender_System):
     mask = np.where(rating >= 0, 1, 0)
 
     rating = labelScaler.transform(rating)
-
-
-    # rating = dataset.T[u_start:u_end, movie_start:movie_end].reshape(-1, 1)
-    # mask = np.where(rating.reshape(-1, 1) >= 0, 1, 0)
-
 
     # selecting the training range of user and movies
     xu = user_feat[u_start:u_end]
@@ -46,7 +48,7 @@ def main(u_start, u_end, movie_start, movie_end, filter:Recommender_System):
 
     return loss
 
-def evaluate(u_start, u_end, movie_start, movie_end, recommend:Hybrid_recommendation_system):
+def evaluate(u_start, u_end, movie_start, movie_end, recommend:Content_Based_filtering):
    
     global user_feat, test_movie_feat, dataset, labelScaler
 
@@ -61,17 +63,28 @@ def evaluate(u_start, u_end, movie_start, movie_end, recommend:Hybrid_recommenda
     user_param, movie_param = recommend.ncf.get_params_from_idx((user_index, movie_index))
 
     # we predict the movie parameters
-    movie_param =  movie_param_predictor(recommend.predict_latent_vec(test_movie_feat))   
+    # movie_param =  movie_param_predictor(recommend.predict_latent_vec(test_movie_feat))   
+
+    # converting to tensor
+    user_param = torch.tensor(user_param, dtype=torch.float32, device=recommend.device)
+    movie_param = torch.tensor(movie_param, dtype=torch.float32, device=recommend.device)
+
+    xu = torch.tensor(xu, dtype=torch.float32, device=recommend.device)
+    xm = torch.tensor(xm, dtype=torch.float32, device=recommend.device)
+
+    
 
     prediction = recommend.prediction(xu, xm, u_params=user_param, i_params=movie_param, expand=True)
+    # prediction = recommend.raw_predict(indexes=(user_index, movie_index), expand=True)
+    # prediction = recommend.predict(xu, xm, expand=True)
    
-    prediction_reverse = labelScaler.inverse_transform(prediction.numpy())
+    prediction_reverse = labelScaler.inverse_transform(prediction.detach().cpu().numpy())
 
     boolean_mask = test_mask > 0
 
     print("===========================================")
     print("the prediction is :")
-    print((prediction_reverse[boolean_mask][:10]))
+    print((prediction_reverse[boolean_mask][-10:]))
     print("===========================================")
     
     difference = (prediction_reverse - test_movie_rating) * test_mask
@@ -80,11 +93,11 @@ def evaluate(u_start, u_end, movie_start, movie_end, recommend:Hybrid_recommenda
     print("===========================================")
 
     print("the label is : ")
-    print((test_movie_rating[boolean_mask][:10]))
+    print((test_movie_rating[boolean_mask][-10:]))
 
     print("===========================================")
     loss = difference[boolean_mask]
-    print("the overall loss is : ", np.mean(loss**2))
+    print("the overall loss is : ", np.sum(loss**2))
     print()
 
 def experiment_with_indexes(user_index:int, anime_index:int) -> tuple:
@@ -114,7 +127,7 @@ def save_checkpoint_info():
     with open("checkpoint.pickle", "wb") as f :
         save_point = {
             "epoch" : epoch ,
-            "loss" : loss,
+            "loss" : overall_loss,
         }
         pickle.dump(save_point, f)
 
@@ -122,7 +135,7 @@ def save_checkpoint_info():
 last_epoch = 0
 previous_loss = 1000
 def load_save_point(new=False):
-    global recommender, last_epoch, previous_loss
+    global recommender, last_epoch, overall_loss
     recommender.filter.load_model()
 
     with open("checkpoint.pickle", "rb") as f :
@@ -132,7 +145,7 @@ def load_save_point(new=False):
         last_epoch = 0
     else :
         last_epoch = save_point["epoch"]
-        previous_loss = save_point["loss"]
+        overall_loss = save_point["loss"]
 
     movie_param_predictor.load_model()
 
@@ -224,48 +237,77 @@ m_dim = movie_feat.shape[-1]
 
 # movie_feat = train_movie_feat
 
-lr = 0.00005
+lr = 0.00001
+overall_loss = 10000
 
 step = 5
 random_u_start = num_user - 100
 random_m_start = num_movie - 100
 
 filter_system = Hybrid_recommendation_system(num_user, num_movie, u_dim, m_dim, lr=lr, l_d=128)
-recommender = Recommender_System(filter_system, 5)
+# filter_system = Neural_Collaborative_filtering(num_user, num_movie, x_dim=128, learning_rate=lr)
+# filter_system = Content_Based_filtering(83, 83, 128)
+recommender = Recommender_System(filter_system, 1)
 
+recommender.filter.load_model()
+
+evaluate(300, 400, 6000, 7000, filter_system)
+
+for e in range(20):
+    total_loss = 0
+    for i in range(4) :
+        deb = 3000 + (500 * i)
+        end = deb + 500
+
+        l = main(0, 572, deb, end, recommender)
+        total_loss += l
+        print(f"epoch {e+1}, limit {end}, loss : {l}", end='\r')
+
+    print(f"epoch {e+1}, loss : {total_loss}")
 
 # the model to predict the movie parameters inside the collaborative filtering system
-movie_param_predictor = Params_prediction(filter_system.ncf.x_dim)
+# movie_param_predictor = Params_prediction(filter_system.ncf.x_dim)
 
-load_save_point(new=False)
+# load_save_point(new=True)
 
 # while True :
 #     u_index = str(input("enter user index : "))
 #     a_index = int(input("enter anime index : "))
 #     answer = experiment_with_indexes(u_index, a_index)
 #     print(f"for u:{u_index} and a:{a_index} the predictions are : ", answer, end="")
-evaluate(200, 400, num_movie-test, num_movie, filter_system)
+# evaluate(200, 400, num_movie-test, num_movie, filter_system)
+evaluate(300, 400, 6000, 7000, filter_system)
 
-l = main(200, 311, 3800, 4000, recommender)
-print("loss is : ", l)
+recommender.filter.save_model()
 
-print("===============================")
+# l = main(200, 311, 3800, 4000, recommender)
+# print("loss is : ", l)
 
-check_up = filter_system.hybrid_model.trainable_variables[0][0][0:10]
-print("check up : ", check_up)
+def check_up():
+    print("===============================")
 
-check_up_ncf = filter_system.ncf._user_params[0, 0:10]
-print("check up user : ", check_up_ncf)
+    check_up = filter_system.hybrid_model.l1.weight[0][:10]
+    print("check up : ", check_up)
 
-input("press to start training...")
+    check_up_ncf = filter_system.ncf._user_params[0, 0:10]
+    print("check up user : ", check_up_ncf)
+
+    input("press to start training...")
 
 
-epochs = 3
+epochs = 20
 num_movie_train = num_movie - test
 
-user_batch_size = 100
-movie_batch_size = 100
+user_batch_size = 286
+movie_batch_size = 800
 
+# saving the scalers
+import pickle
+with open("scalers/item_scaler.pickle", "wb") as f :
+    pickle.dump(xm_scaler, f)
+
+with open("scalers/label_scaler.pickle", "wb") as f :
+    pickle.dump(labelScaler, f)
 
     
 # load_save_point(new=True)
@@ -273,6 +315,7 @@ movie_batch_size = 100
 print("starting to train")
 try : 
     for epoch in range(epochs):
+        total_loss = 0
         if epoch < last_epoch :
             continue
         for u_batch in range(user_batch_size, num_user, user_batch_size) :
@@ -283,54 +326,51 @@ try :
                 m_start = m_batch - movie_batch_size
 
                 loss = main(u_start, u_batch, m_start, m_batch, recommender)
+                
+                total_loss += loss
 
                 print(f"epochs {epoch} u_batch {u_batch} m_batch {m_batch} loss : {loss}", end="\r")
             
        
 
 
-        print(f"epochs {epoch} u_batch {u_batch} m_batch {m_batch} loss : {loss}")
+        print(f"epochs {epoch} loss : {total_loss}")
 
-        if loss < previous_loss :
-            recommender.filter.save_model()
+        if total_loss < overall_loss :
+            recommender.filter.save_model(model_set="1")
+            overall_loss = total_loss
             save_checkpoint_info()
 
-            previous_loss = loss
 
 except Exception as e:
     print(e)
     print(f"epochs {epoch} u_batch {u_batch} m_batch {m_batch} loss : {loss}")
 
-    print("===============================")
+  
 
-    check_up = filter_system.hybrid_model.trainable_variables[0][0][0:10]
-    print("check up : ", check_up)
-
-    check_up_ncf = filter_system.ncf._user_params[0, 0:10]
-    print("check up user : ", check_up_ncf)
-
-    print("early stop")
-
+print("---------------------------------")
+print("training the predictor")
 movie_idx = np.arange(0, num_movie-test)
+user_idx = np.arange(0, num_user - 50)
 
+movie_param_predictor = Params_prediction(filter_system.ncf.x_dim)
+# movie_param_predictor.load_model()
 
+user_params, movie_param = filter_system.ncf.get_params_from_idx((user_idx, movie_idx))
+movie_vec = filter_system.predict_latent_vec(train_movie_feat, isUser=False)
 
-_, movie_param = filter_system.ncf.get_params_from_idx(([0], movie_idx))
-movie_vec = filter_system.predict_latent_vec(movie_feat)
-
-movie_param_predictor.train(movie_vec, movie_param, epochs=100, verbose=False)
+movie_param_predictor.train(movie_vec, movie_param, epochs=200, verbose=True)
 
 movie_param_predictor.save_model()
 
+user_param_predictor = Params_prediction(recommender.filter.ncf.x_dim, pred_type="user")
+# user_param_predictor.load_model()
+
+user_vec = recommender.filter.predict_latent_vec(user_feat[user_idx])
+
+user_param_predictor.train(user_vec, user_params, epochs=200, verbose=True)
+user_param_predictor.save_model()
+
+
 evaluate(200, 400, num_movie-test, num_movie, filter_system)
-
-print("===============================")
-
-check_up = filter_system.hybrid_model.trainable_variables[0][0][0:10]
-print("check up : ", check_up)
-
-check_up_ncf = filter_system.ncf._user_params[0, 0:10]
-print("check up user : ", check_up_ncf)
-
-
     
