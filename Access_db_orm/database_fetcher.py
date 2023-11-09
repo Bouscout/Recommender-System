@@ -1,4 +1,4 @@
-# in order to handle all the fetch
+# in order to handle all the query operations
 import pandas as pd
 import pyodbc
 

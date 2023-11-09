@@ -2,6 +2,12 @@
 
 my_anime_list_parser/token.json
 
+my_anime_list_parser/*
+
+my_anime_data_cleaned/*
+
+myanimedata/*
+
 data/*
 
 data_preprocessing/*
@@ -14,13 +20,9 @@ scalers/*
 
 deployment/*
 
-*ipynb
-
 *accdb
 
 *json
-
-*csv
 
 *pth
 

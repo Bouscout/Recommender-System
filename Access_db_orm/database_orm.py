@@ -1,3 +1,4 @@
+# module to interact with a microsoft access database
 
 import pyodbc
 from Access_db_orm.database_fetcher import Queries_fetching
