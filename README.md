@@ -1,6 +1,16 @@
 # Recommender-System
 Recommendation system including module like implementation of collaborative filtering, content based filtering and hybrid recommendation system laveraging a weighted application of both previous systems.
 
+## Requirements
+```
+numpy==1.23.5
+pandas==2.1.2
+python-dotenv==1.0.0
+scikit-learn==1.3.2
+tensorflow==2.12.0
+torch==2.1.0+cu121
+```
+
 ## Neural Collaborative Filtering (NCF)
 This class implements a collaborative filtering system using a neural network for predicting user-item affinity.
 * Parameters :
