@@ -54,7 +54,10 @@ class Hybrid_model(nn.Module):
 
 
 class Hybrid_recommendation_system():
-    def __init__(self, num_user:int, num_item:int, u_feat_dim:int, i_feat_dim:int, *, lr:float=0.001, l_d=20, binary=False) -> None:
+    def __init__(self, num_user:int, num_item:int, u_feat_dim:int, i_feat_dim:int, *, 
+                lr:float=0.001, l_d=20, collab_filter_dim=128,
+                binary=False
+                ) -> None:
         """
         Hybrid recommendation system based on the use of a Neural Collaborative filtering system and a content based recommender system using pytorch\n
 
@@ -87,17 +90,17 @@ class Hybrid_recommendation_system():
             print("Device set to : cpu")
         print("============================================================================================")
 
-        self.create_model(u_feat_dim, i_feat_dim, l_d, binary)
+        self.create_model(u_feat_dim, i_feat_dim, collab_filter_dim , l_d, binary)
 
         self.model_path = "hybrid_filtering_pytorch/models/hybrid"
 
-    def create_model(self, u_dim, i_dim, latent_dimension, binary):
+    def create_model(self, u_dim, i_dim, collab_dim, latent_dimension, binary):
         # preparing the ncf algorithm
-        collab_feature_dimension = 128
+        collab_feature_dimension = collab_dim
         self.ncf = Neural_Collaborative_filtering(self.num_user, self.num_item, collab_feature_dimension, output_dim=latent_dimension)
 
         # prepare the content based algorithm
-        model_dim = 64
+        model_dim = 128
         self.content_filtering = Content_Based_filtering(u_dim, i_dim, model_dim, output_dim=latent_dimension)
         
         self.hybrid_model = Hybrid_model(self.ncf, self.content_filtering, latent_dimension, binary).to(self.device)
@@ -114,6 +117,8 @@ class Hybrid_recommendation_system():
 
         if indexes :
             u_params, i_params = self.ncf.get_params_from_idx(indexes) 
+            u_params = torch.tensor(u_params, dtype=torch.float32, device=self.device)
+            i_params = torch.tensor(i_params, dtype=torch.float32, device=self.device)
 
         rating = self.hybrid_model(u_features, i_features, u_params, i_params, expand, weights)
 
@@ -161,7 +166,7 @@ class Hybrid_recommendation_system():
             
             else :
                 squared_error = (filtered_output - filtered_rating)**2
-                return torch.sum(squared_error)
+                return torch.mean(squared_error)
 
         # initializing new optimizer cause we might be using new params for the ncf
         optimizer = torch.optim.Adam([

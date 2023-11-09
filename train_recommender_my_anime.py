@@ -78,6 +78,7 @@ def evaluate(u_start, u_end, movie_start, movie_end, recommend:Content_Based_fil
     # prediction = recommend.raw_predict(indexes=(user_index, movie_index), expand=True)
     # prediction = recommend.predict(xu, xm, expand=True)
    
+    # prediction_reverse = prediction.detach().cpu().numpy()
     prediction_reverse = labelScaler.inverse_transform(prediction.detach().cpu().numpy())
 
     boolean_mask = test_mask > 0
@@ -249,21 +250,21 @@ filter_system = Hybrid_recommendation_system(num_user, num_movie, u_dim, m_dim, 
 # filter_system = Content_Based_filtering(83, 83, 128)
 recommender = Recommender_System(filter_system, 1)
 
-recommender.filter.load_model()
+recommender.filter.load_model("1")
 
-evaluate(300, 400, 6000, 7000, filter_system)
+evaluate(300, 400, 3000, 4000, filter_system)
 
-for e in range(20):
-    total_loss = 0
-    for i in range(4) :
-        deb = 3000 + (500 * i)
-        end = deb + 500
+# for e in range(50):
+#     total_loss = 0
+#     for i in range(5) :
+#         deb = 3000 + (500 * i)
+#         end = deb + 450
 
-        l = main(0, 572, deb, end, recommender)
-        total_loss += l
-        print(f"epoch {e+1}, limit {end}, loss : {l}", end='\r')
+#         l = main(0, 572, deb, end, recommender)
+#         total_loss += l
+#         print(f"epoch {e+1}, limit {end}, loss : {l}", end='\r')
 
-    print(f"epoch {e+1}, loss : {total_loss}")
+#     print(f"epoch {e+1}, loss : {total_loss}")
 
 # the model to predict the movie parameters inside the collaborative filtering system
 # movie_param_predictor = Params_prediction(filter_system.ncf.x_dim)
@@ -276,9 +277,9 @@ for e in range(20):
 #     answer = experiment_with_indexes(u_index, a_index)
 #     print(f"for u:{u_index} and a:{a_index} the predictions are : ", answer, end="")
 # evaluate(200, 400, num_movie-test, num_movie, filter_system)
-evaluate(300, 400, 6000, 7000, filter_system)
+# evaluate(300, 400, 6000, 7000, filter_system)
 
-recommender.filter.save_model()
+# recommender.filter.save_model("1")
 
 # l = main(200, 311, 3800, 4000, recommender)
 # print("loss is : ", l)
@@ -298,8 +299,8 @@ def check_up():
 epochs = 20
 num_movie_train = num_movie - test
 
-user_batch_size = 286
-movie_batch_size = 800
+user_batch_size = 572
+movie_batch_size = 450
 
 # saving the scalers
 import pickle

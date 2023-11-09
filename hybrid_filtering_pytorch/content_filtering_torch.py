@@ -10,9 +10,9 @@ class Latent_model(nn.Module):
         self.item_model = item_model
 
         self.l1 = nn.Linear(input_shape*2, 512)
-        self.l2 = nn.Linear(512, 1024)
-        self.l3 = nn.Linear(1024, 512)
-        self.l4 = nn.Linear(512, output_shape)
+        self.l2 = nn.Linear(512, 512)
+        # self.l3 = nn.Linear(1024, 512)
+        self.l3 = nn.Linear(512, output_shape)
 
         self.binary = binary
 
@@ -27,12 +27,12 @@ class Latent_model(nn.Module):
         
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
-        x = F.relu(self.l3(x))
+        # x = F.relu(self.l3(x))
 
         if self.binary :
-            x = F.sigmoid(x)
+            x = F.sigmoid(self.l3(x))
         else :
-            x = self.l4(x)
+            x = self.l3(x)
         
         return x
         
@@ -71,7 +71,9 @@ class Content_Based_filtering():
         self.user_model = nn.Sequential(
             nn.Linear(Xu, 512),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(512, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
             nn.ReLU(),
             nn.Linear(512, Vm),
         )
@@ -79,7 +81,9 @@ class Content_Based_filtering():
         self.item_model = nn.Sequential(
             nn.Linear(Xi, 512),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Linear(512, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
             nn.ReLU(),
             nn.Linear(512, Vm),
         )

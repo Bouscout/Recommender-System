@@ -6,7 +6,13 @@ data/*
 
 data_preprocessing/*
 
+data/*
+
 models_params/*
+
+scalers/*
+
+deployment/*
 
 *ipynb
 
@@ -15,3 +21,7 @@ models_params/*
 *json
 
 *csv
+
+*pth
+
+*pickle
