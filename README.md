@@ -10,6 +10,9 @@ scikit-learn==1.3.2
 tensorflow==2.12.0
 torch==2.1.0+cu121
 ```
+You will need this need this dataset if you want to process the MyAnimeList dataset, otherwise a cleaned section of MovieLens dataset is already included 
+```https://www.kaggle.com/datasets/svanoo/myanimelist-dataset```
+For the MyAnimeList dataset, processing script could be found in the my_anime_preprocessing folder.
 
 ## Neural Collaborative Filtering (NCF)
 This class implements a collaborative filtering system using a neural network for predicting user-item affinity.
